@@ -6,11 +6,11 @@
         <h6>Use a permanent address whre you receive a mail</h6>
       </b-col>
       <b-col cols="12" md="8" sm="8" lg="8" xl="8">
-        <b-form
-          class="shadow rounded form-section"
-          @submit.prevent="submitData"
-        >
-          <b-overlay :show="showLoader" rounded="sm">
+        <b-overlay :show="showLoader" rounded="sm">
+          <b-form
+            class="shadow rounded form-section"
+            @submit.prevent="submitData"
+          >
             <b-row>
               <b-col cols="12" md="6" sm="6" lg="6" xl="6">
                 <b-form-group label="First Name" label-align="left">
@@ -128,7 +128,7 @@
                 <b-form-group label="ZIP/ Postal Code" label-align="left">
                   <b-form-input
                     v-model="form.zipcode"
-                    v-validate="'required|numeric'"
+                    v-validate="'required'"
                     type="text"
                     name="ZIP code"
                     :class="{ 'is-invalid': errors.has('ZIP code') }"
@@ -169,28 +169,28 @@
                 </b-alert>
               </b-col>
             </b-row>
-          </b-overlay>
-          <b-row class="submit-row">
-            <b-col cols="12">
-              <b-button
-                v-if="showLoader"
-                variant="primary"
-                class="float-right"
-                disabled
-              >
-                <b-spinner small type="grow" class="mr-3" />
-                Loading...
-              </b-button>
-              <b-button
-                v-else
-                variant="primary"
-                class="float-right"
-                type="submit"
-                >Save</b-button
-              >
-            </b-col>
-          </b-row>
-        </b-form>
+            <b-row>
+              <b-col cols="12 mb-3">
+                <b-button
+                  v-if="showLoader"
+                  variant="primary"
+                  class="float-right"
+                  disabled
+                >
+                  <b-spinner small type="grow" class="mr-3" />
+                  Loading...
+                </b-button>
+                <b-button
+                  v-else
+                  variant="primary"
+                  class="float-right"
+                  type="submit"
+                  >Save</b-button
+                >
+              </b-col>
+            </b-row>
+          </b-form>
+        </b-overlay>
       </b-col>
     </b-row>
   </div>
@@ -241,25 +241,33 @@ export default {
     },
 
     async submitData() {
-      this.showLoader = true
-      this.hasMessage = true
-      this.message = 'Requesting to server...\n\r please wait a moment.'
-      this.messageClass = 'info'
-      delete this.form.id
-      await this.$axios
-        .$post(`/user/1`, this.form)
-        .then((res) => {
-          this.message = res.message
-          this.messageClass = res.status === 1 ? 'success' : 'danger'
-        })
-        .catch((e) => {
-          // const ErrorMessage = this.__generateMessageStringFromError(
-          //   e.response.data.message
-          // )
-          // this.message = ErrorMessage
-          // this.messageClass = 'danger'
-        })
-      this.showLoader = false
+      await this.$validator.validateAll().then(async (result) => {
+        this.showLoader = true
+        this.hasMessage = true
+        if (result) {
+          this.message = 'Requesting to server...\n\r please wait a moment.'
+          this.messageClass = 'info'
+          delete this.form.id
+          const userID = 1
+          await this.$axios.$post(`/user/${userID}`, this.form).then((res) => {
+            if (res.status === 1) {
+              this.messageClass = 'success'
+              this.message = res.message
+            } else if (res.status === 2) {
+              this.messageClass = 'danger'
+              const ErrorMessage = this.__generateMessageStringFromError(
+                res.message
+              )
+              this.message = ErrorMessage
+              this.messageClass = 'danger'
+            }
+          })
+        } else {
+          this.message = 'Please fill all required field with valid data.'
+          this.messageClass = 'danger'
+        }
+        this.showLoader = false
+      })
     },
   },
 }
@@ -267,7 +275,7 @@ export default {
 
 <style>
 body {
-  background: #f3f4f6;
+  background: #e5e5e5;
   color: #000;
 }
 .container-fluid {
@@ -277,11 +285,5 @@ body {
   background: #fff;
   padding: 1.2rem;
   padding-bottom: 0;
-}
-.submit-row {
-  background-color: rgba(0, 0, 0, 0.05);
-  padding: 0;
-  padding-top: 1rem;
-  padding-bottom: 0.6rem;
 }
 </style>

@@ -47,5 +47,10 @@ export default {
     transpile: [
         'vee-validate/dist/rules'
     ],
+    babel:{
+      plugins: [
+        ['@babel/plugin-proposal-private-methods', { loose: true }]
+      ]
+    }
   }
 }
